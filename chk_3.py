@@ -1,4 +1,3 @@
-
 import pandas as pd
 import numpy as np
 from sklearn.preprocessing import LabelEncoder
@@ -8,9 +7,26 @@ from sklearn.metrics import accuracy_score, classification_report, confusion_mat
 import joblib
 import streamlit as st
 
-# Load the trained model and label encoders
-model = joblib.load('model.pkl')
-label_encoder = joblib.load('encoder.pkl')
+# Load data
+data = pd.read_csv("cleaned.csv")
+
+# Machine Learning
+X = data.drop("bank_account", axis=1)
+y = data["bank_account"]
+
+# Encode categorical features using LabelEncoder
+label_encoders = {}
+for column in X.select_dtypes(include=['object']).columns:
+    encoder = LabelEncoder()
+    label_encoders[column] = encoder
+    X[column] = encoder.fit_transform(X[column])
+
+# Split the data into training and testing sets
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+# Train the model
+model = RandomForestClassifier()
+model.fit(X_train, y_train)
 
 # Function to encode user inputs
 def encode_inputs(input_data, encoders):
@@ -27,7 +43,6 @@ st.title("Bank Account Prediction")
 
 Country = st.text_input("country")
 Uniqueid = st.text_input("unique ID")
-# Bank_account = st.text_input("Bank Account")
 Location_type = st.text_input("location Type")
 Cellphone_access = st.text_input("cellphone Access")
 Gender_of_respondent = st.text_input("gender of Respondent")
@@ -44,44 +59,25 @@ df = pd.DataFrame({
     "country": [Country],
     "year": [Year],
     "uniqueid": [Uniqueid],
-    # "bank_account": [Bank_account],
     "location_type": [Location_type],
     "cellphone_access": [Cellphone_access],
     "household_size": [Household_size],
     "age_of_respondent": [Age_of_respondent],
     "gender_of_respondent": [Gender_of_respondent],
-    
-    
     "relationship_with_head": [Relationship_with_head],
     "marital_status": [Marital_status],
     "education_level": [Education_level],
     "job_type": [Job_type]
-    
-    
-    
 })
-# Index(['country', 'year', 'uniqueid', 'location_type', 'cellphone_access',
-#        'household_size', 'age_of_respondent', 'gender_of_respondent',
-#        'relationship_with_head', 'marital_status', 'education_level',
-#        'job_type'],
-#       dtype='object')
- 
-#  Index(['country', 'year', 'uniqueid', 'bank_account', 'location_type',
-#        'cellphone_access', 'household_size', 'age_of_respondent',
-#        'gender_of_respondent', 'relationship_with_head', 'marital_status',
-#        'education_level', 'job_type'],
-# df1=df.drop(['year', 'household_size', 'age_of_respondent'],axis=1) 
-# Encode the inputs
 
-df = encode_inputs(df, label_encoder)
-# print(df.columns)
+# Encode inputs
+df = encode_inputs(df, label_encoders)
+
 # Predict button
 if st.button('Predict'):
-    # Convert input data to DataFrame
-    input_df = pd.DataFrame(df)
-
     # Ensure all features are present
-    input_df = input_df.reindex(columns=df.columns, fill_value=0)
+    input_df = pd.DataFrame(df)
+    input_df = input_df.reindex(columns=X.columns, fill_value=0)
 
     # Make prediction
     prediction = model.predict(input_df)
